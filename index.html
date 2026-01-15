@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026학년도 반배정 조회</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 { color: #333; margin-bottom: 1.5rem; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box; /* 패딩 포함 크기 계산 */
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #357ae8; }
+        button:disabled { background-color: #ccc; }
+        
+        #resultArea {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f0fe;
+            border-radius: 8px;
+            color: #1967d2;
+            font-weight: bold;
+            display: none; /* 평소에는 숨김 */
+        }
+        .error { color: red; background-color: #fce8e6; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🏫 2026 반배정 조회</h2>
+        
+        <input type="text" id="studentId" placeholder="2025학년도 학번 (예: 1101)">
+        <input type="text" id="birthDate" placeholder="생년월일 6자리 (예: 080101)">
+        
+        <button onclick="searchClass()" id="btnSearch">조회하기</button>
+
+        <div id="resultArea"></div>
+    </div>
+
+    <script>
+        // ============================================================
+        // ▼ 아래 주소를 선생님의 GAS 웹앱 URL로 바꿔주세요! (따옴표 유지)
+        // ============================================================
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzRA0k45igBaOu32ZGFxDEF5AFs9zJzbBsikXCJHRkrwRG9BhHJwjOHhHqPizCUH6PU0g/exec"; 
+        // ============================================================
+
+        function searchClass() {
+            const id = document.getElementById('studentId').value;
+            const birth = document.getElementById('birthDate').value;
+            const resultDiv = document.getElementById('resultArea');
+            const btn = document.getElementById('btnSearch');
+
+            // 1. 입력값 검사
+            if(!id || !birth) {
+                alert("학번과 생년월일을 모두 입력해주세요.");
+                return;
+            }
+
+            // 2. 로딩 상태 표시
+            btn.innerText = "조회 중...";
+            btn.disabled = true;
+            resultDiv.style.display = 'none';
+            resultDiv.className = ''; // 스타일 초기화
+
+            // 3. GAS 서버로 데이터 전송 (POST)
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ studentId: id, birthDate: birth }) // 데이터를 묶어서 보냄
+            })
+            .then(response => response.json()) // 응답을 JSON으로 변환
+            .then(json => {
+                // 4. 결과 처리
+                resultDiv.style.display = 'block';
+                
+                if (json.result === "success") {
+                    // 성공 시
+                    resultDiv.innerHTML = `
+                        ${json.data.name} 학생 반배정 결과<br>
+                        <span style="font-size:1.5em;">🎉 ${json.data.newClass}</span>
+                    `;
+                } else {
+                    // 실패(정보 불일치) 시
+                    resultDiv.innerText = json.message;
+                    resultDiv.classList.add('error');
+                }
+            })
+            .catch(error => {
+                // 시스템 에러
+                console.error(error);
+                resultDiv.style.display = 'block';
+                resultDiv.innerText = "통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+                resultDiv.classList.add('error');
+            })
+            .finally(() => {
+                // 버튼 원상복구
+                btn.innerText = "조회하기";
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
