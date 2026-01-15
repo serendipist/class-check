@@ -8,7 +8,7 @@
         /* iOS 스타일 폰트 적용 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f2f2f7; /* iOS 스타일 배경색 */
+            background-color: #f2f2f7;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -20,46 +20,41 @@
         .container {
             background-color: white;
             padding: 2.5rem;
-            border-radius: 24px; /* 더 둥글게 */
-            /* 더 부드럽고 넓은 그림자 */
+            border-radius: 24px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             width: 100%;
-            max-width: 380px; /* 아이폰 폭에 맞춤 */
+            max-width: 380px;
             text-align: center;
         }
-        /* 제목 스타일 */
         h2 { 
             color: #1c1c1e; 
             margin-bottom: 2rem; 
             font-weight: 700;
             font-size: 1.6rem;
         }
-        /* 제목 로딩 중 깜빡임 효과 */
         .loading-title { color: #aaa; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* 입력창 스타일 (iOS 느낌) */
         input {
             width: 100%;
             padding: 16px;
             margin: 8px 0;
-            border: none; /* 테두리 없앰 */
-            background-color: #f2f2f7; /* 연한 회색 배경 */
+            border: none;
+            background-color: #f2f2f7;
             border-radius: 14px;
             box-sizing: border-box;
-            font-size: 17px; /* iOS 기본 폰트 크기 */
+            font-size: 17px;
             color: #1c1c1e;
             outline: none;
             transition: background-color 0.2s;
         }
-        input:focus { background-color: #e5e5ea; } /* 포커스 시 약간 진해짐 */
+        input:focus { background-color: #e5e5ea; }
         ::placeholder { color: #aeaeb2; }
 
-        /* 버튼 스타일 (애플 블루) */
         button {
             width: 100%;
             padding: 16px;
-            background-color: #007aff; /* Apple Blue */
+            background-color: #007aff;
             color: white;
             border: none;
             border-radius: 14px;
@@ -69,10 +64,9 @@
             margin-top: 15px;
             transition: all 0.2s;
         }
-        button:active { transform: scale(0.98); background-color: #0062cc; } /* 클릭 효과 */
+        button:active { transform: scale(0.98); background-color: #0062cc; }
         button:disabled { background-color: #d1d1d6; color: #8e8e93; transform: none;}
         
-        /* 결과창 스타일 */
         #resultArea {
             margin-top: 25px;
             padding: 20px;
@@ -84,9 +78,16 @@
             font-size: 1.1rem;
             line-height: 1.5;
         }
-        .error { color: #ff3b30 !important; background-color: #fff2f1 !important; } /* 애플 레드 */
+        /* 상세 정보(몇학년 몇반) 스타일 */
+        .class-detail {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.6em; /* 원래 글씨보다 작게 */
+            color: #8e8e93;   /* 회색으로 처리 */
+            font-weight: normal;
+        }
+        .error { color: #ff3b30 !important; background-color: #fff2f1 !important; }
 
-        /* 모바일 대응 */
         @media (max-width: 480px) {
             .container { padding: 1.8rem; }
             h2 { font-size: 1.4rem; }
@@ -98,7 +99,8 @@
     <div class="container">
         <h2 id="pageTitle" class="loading-title">준비 중...</h2>
         
-        <input type="text" id="studentId" placeholder="2025학년도 학번 (예: 1101)" inputmode="numeric">
+        <input type="text" id="studentId" placeholder="2025학년도 학번 (예: 10101)" inputmode="numeric" maxlength="5">
+        <input type="text" id="studentName" placeholder="이름 (예: 홍길동)">
         <input type="password" id="birthDate" placeholder="생년월일 6자리 (예: 080101)" inputmode="numeric" maxlength="6">
         
         <button onclick="searchClass()" id="btnSearch">조회하기</button>
@@ -113,32 +115,32 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzRA0k45igBaOu32ZGFxDEF5AFs9zJzbBsikXCJHRkrwRG9BhHJwjOHhHqPizCUH6PU0g/exec"; 
         // ============================================================
 
-        // 페이지 로드 시 실행: 시트 이름 가져오기
         window.onload = function() {
-            fetch(GAS_URL) // GET 요청으로 기본 정보 가져옴
+            fetch(GAS_URL)
                 .then(response => response.json())
                 .then(json => {
                     if(json.result === "success") {
                         const titleElement = document.getElementById('pageTitle');
-                        // 시트 이름을 제목에 반영
                         titleElement.innerText = "🏫 " + json.sheetName + " 반배정 조회";
                         titleElement.classList.remove('loading-title');
                     }
                 })
                 .catch(err => {
-                    console.error("제목 가져오기 실패:", err);
                     document.getElementById('pageTitle').innerText = "🏫 반배정 조회";
                 });
         };
 
         function searchClass() {
             const id = document.getElementById('studentId').value;
+            const name = document.getElementById('studentName').value;
             const birth = document.getElementById('birthDate').value;
+            
             const resultDiv = document.getElementById('resultArea');
             const btn = document.getElementById('btnSearch');
 
-            if(!id || birth.length < 6) {
-                alert("학번과 생년월일 6자리를 정확히 입력해주세요.");
+            // 유효성 검사 (3가지 모두 확인)
+            if(!id || !name || birth.length < 6) {
+                alert("학번, 이름, 생년월일을 모두 정확히 입력해주세요.");
                 return;
             }
 
@@ -147,21 +149,36 @@
             resultDiv.style.display = 'none';
             resultDiv.className = '';
 
-            // POST 요청으로 검색 데이터 전송
             fetch(GAS_URL, {
                 method: "POST",
-                body: JSON.stringify({ studentId: id, birthDate: birth })
+                body: JSON.stringify({ studentId: id, studentName: name, birthDate: birth })
             })
             .then(response => response.json())
             .then(json => {
                 resultDiv.style.display = 'block';
                 if (json.result === "success") {
+                    
+                    // 학번 파싱 로직 (예: 30101 -> 3학년 1반 1번)
+                    const newId = json.data.newClass;
+                    let detailText = "";
+                    
+                    // 5자리 숫자일 경우에만 변환 시도
+                    if (newId.length === 5 && !isNaN(newId)) {
+                        const grade = newId.substring(0, 1);     // 첫번째 글자
+                        const cls = parseInt(newId.substring(1, 3)); // 2~3번째 글자 (01 -> 1)
+                        const num = parseInt(newId.substring(3, 5)); // 4~5번째 글자 (01 -> 1)
+                        detailText = `(${grade}학년 ${cls}반 ${num}번)`;
+                    }
+
                     resultDiv.innerHTML = `
                         ${json.data.name} 학생의 새 학번<br>
-                        <span style="font-size:1.8em; display:block; margin-top:10px;">🎉 ${json.data.newClass}</span>
+                        <span style="font-size:1.8em; display:block; margin-top:10px;">
+                            🎉 ${newId}
+                            <span class="class-detail">${detailText}</span>
+                        </span>
                     `;
                 } else {
-                    resultDiv.innerText = json.message;
+                    resultDiv.innerHTML = json.message;
                     resultDiv.classList.add('error');
                 }
             })
