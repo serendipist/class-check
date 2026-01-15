@@ -2,71 +2,104 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026학년도 반배정 조회</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>반배정 결과 조회</title>
     <style>
+        /* iOS 스타일 폰트 적용 */
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f2f2f7; /* iOS 스타일 배경색 */
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
             background-color: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+            border-radius: 24px; /* 더 둥글게 */
+            /* 더 부드럽고 넓은 그림자 */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             width: 100%;
-            max-width: 400px;
+            max-width: 380px; /* 아이폰 폭에 맞춤 */
             text-align: center;
         }
-        h2 { color: #333; margin-bottom: 1.5rem; }
+        /* 제목 스타일 */
+        h2 { 
+            color: #1c1c1e; 
+            margin-bottom: 2rem; 
+            font-weight: 700;
+            font-size: 1.6rem;
+        }
+        /* 제목 로딩 중 깜빡임 효과 */
+        .loading-title { color: #aaa; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* 입력창 스타일 (iOS 느낌) */
         input {
             width: 100%;
-            padding: 12px;
+            padding: 16px;
             margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box; /* 패딩 포함 크기 계산 */
-            font-size: 16px;
+            border: none; /* 테두리 없앰 */
+            background-color: #f2f2f7; /* 연한 회색 배경 */
+            border-radius: 14px;
+            box-sizing: border-box;
+            font-size: 17px; /* iOS 기본 폰트 크기 */
+            color: #1c1c1e;
+            outline: none;
+            transition: background-color 0.2s;
         }
+        input:focus { background-color: #e5e5ea; } /* 포커스 시 약간 진해짐 */
+        ::placeholder { color: #aeaeb2; }
+
+        /* 버튼 스타일 (애플 블루) */
         button {
             width: 100%;
-            padding: 12px;
-            background-color: #4285f4;
+            padding: 16px;
+            background-color: #007aff; /* Apple Blue */
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 15px;
+            transition: all 0.2s;
         }
-        button:hover { background-color: #357ae8; }
-        button:disabled { background-color: #ccc; }
+        button:active { transform: scale(0.98); background-color: #0062cc; } /* 클릭 효과 */
+        button:disabled { background-color: #d1d1d6; color: #8e8e93; transform: none;}
         
+        /* 결과창 스타일 */
         #resultArea {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e8f0fe;
-            border-radius: 8px;
-            color: #1967d2;
-            font-weight: bold;
-            display: none; /* 평소에는 숨김 */
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f2f2f7;
+            border-radius: 18px;
+            color: #007aff;
+            font-weight: 600;
+            display: none;
+            font-size: 1.1rem;
+            line-height: 1.5;
         }
-        .error { color: red; background-color: #fce8e6; }
+        .error { color: #ff3b30 !important; background-color: #fff2f1 !important; } /* 애플 레드 */
+
+        /* 모바일 대응 */
+        @media (max-width: 480px) {
+            .container { padding: 1.8rem; }
+            h2 { font-size: 1.4rem; }
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>🏫 2026 반배정 조회</h2>
+        <h2 id="pageTitle" class="loading-title">준비 중...</h2>
         
-        <input type="text" id="studentId" placeholder="2025학년도 학번 (예: 1101)">
-        <input type="text" id="birthDate" placeholder="생년월일 6자리 (예: 080101)">
+        <input type="text" id="studentId" placeholder="2025학년도 학번 (예: 1101)" inputmode="numeric">
+        <input type="password" id="birthDate" placeholder="생년월일 6자리 (예: 080101)" inputmode="numeric" maxlength="6">
         
         <button onclick="searchClass()" id="btnSearch">조회하기</button>
 
@@ -75,10 +108,28 @@
 
     <script>
         // ============================================================
-        // ▼ 아래 주소를 선생님의 GAS 웹앱 URL로 바꿔주세요! (따옴표 유지)
+        // ▼ 아래 주소를 선생님의 GAS 웹앱 URL로 바꿔주세요!
         // ============================================================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzRA0k45igBaOu32ZGFxDEF5AFs9zJzbBsikXCJHRkrwRG9BhHJwjOHhHqPizCUH6PU0g/exec"; 
         // ============================================================
+
+        // 페이지 로드 시 실행: 시트 이름 가져오기
+        window.onload = function() {
+            fetch(GAS_URL) // GET 요청으로 기본 정보 가져옴
+                .then(response => response.json())
+                .then(json => {
+                    if(json.result === "success") {
+                        const titleElement = document.getElementById('pageTitle');
+                        // 시트 이름을 제목에 반영
+                        titleElement.innerText = "🏫 " + json.sheetName + " 반배정 조회";
+                        titleElement.classList.remove('loading-title');
+                    }
+                })
+                .catch(err => {
+                    console.error("제목 가져오기 실패:", err);
+                    document.getElementById('pageTitle').innerText = "🏫 반배정 조회";
+                });
+        };
 
         function searchClass() {
             const id = document.getElementById('studentId').value;
@@ -86,49 +137,40 @@
             const resultDiv = document.getElementById('resultArea');
             const btn = document.getElementById('btnSearch');
 
-            // 1. 입력값 검사
-            if(!id || !birth) {
-                alert("학번과 생년월일을 모두 입력해주세요.");
+            if(!id || birth.length < 6) {
+                alert("학번과 생년월일 6자리를 정확히 입력해주세요.");
                 return;
             }
 
-            // 2. 로딩 상태 표시
             btn.innerText = "조회 중...";
             btn.disabled = true;
             resultDiv.style.display = 'none';
-            resultDiv.className = ''; // 스타일 초기화
+            resultDiv.className = '';
 
-            // 3. GAS 서버로 데이터 전송 (POST)
+            // POST 요청으로 검색 데이터 전송
             fetch(GAS_URL, {
                 method: "POST",
-                body: JSON.stringify({ studentId: id, birthDate: birth }) // 데이터를 묶어서 보냄
+                body: JSON.stringify({ studentId: id, birthDate: birth })
             })
-            .then(response => response.json()) // 응답을 JSON으로 변환
+            .then(response => response.json())
             .then(json => {
-                // 4. 결과 처리
                 resultDiv.style.display = 'block';
-                
                 if (json.result === "success") {
-                    // 성공 시
                     resultDiv.innerHTML = `
-                        ${json.data.name} 학생 반배정 결과<br>
-                        <span style="font-size:1.5em;">🎉 ${json.data.newClass}</span>
+                        ${json.data.name} 학생의 새 학번<br>
+                        <span style="font-size:1.8em; display:block; margin-top:10px;">🎉 ${json.data.newClass}</span>
                     `;
                 } else {
-                    // 실패(정보 불일치) 시
                     resultDiv.innerText = json.message;
                     resultDiv.classList.add('error');
                 }
             })
             .catch(error => {
-                // 시스템 에러
-                console.error(error);
                 resultDiv.style.display = 'block';
-                resultDiv.innerText = "통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+                resultDiv.innerText = "시스템 오류가 발생했습니다.";
                 resultDiv.classList.add('error');
             })
             .finally(() => {
-                // 버튼 원상복구
                 btn.innerText = "조회하기";
                 btn.disabled = false;
             });
