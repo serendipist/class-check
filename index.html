@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f2f2f7;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -16,39 +16,70 @@
             padding: 20px;
             box-sizing: border-box;
         }
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+            opacity: 0.15;
+            z-index: -1;
+        }
         .container {
-            background-color: white;
-            padding: 2.5rem;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem 2rem;
             border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 380px;
+            max-width: 360px;
             text-align: center;
         }
         h2 { 
             color: #1c1c1e; 
             margin-bottom: 2rem; 
-            font-weight: 700;
-            font-size: 1.6rem;
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -0.5px;
         }
         .loading-title { color: #aaa; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
+        .input-group {
+            background-color: #f5f5f7;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid #e5e5ea;
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            height: 55px;
+            background-color: white;
+            border-bottom: 1px solid #e5e5ea;
+        }
+        .input-row:last-child { border-bottom: none; }
+
+        .label {
+            width: 60px; /* 라벨 너비 약간 줄임 */
+            text-align: left;
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            flex-shrink: 0;
+        }
+
         input {
             width: 100%;
-            padding: 16px;
-            margin: 8px 0;
             border: none;
-            background-color: #f2f2f7;
-            border-radius: 14px;
-            box-sizing: border-box;
-            font-size: 17px;
+            background: transparent;
+            font-size: 16px;
             color: #1c1c1e;
             outline: none;
-            transition: background-color 0.2s;
+            text-align: right; 
+            padding: 10px 0;
         }
-        input:focus { background-color: #e5e5ea; }
-        ::placeholder { color: #aeaeb2; }
+        ::placeholder { color: #c7c7cc; font-weight: normal; font-size: 14px; }
 
         button {
             width: 100%;
@@ -56,20 +87,20 @@
             background-color: #007aff;
             color: white;
             border: none;
-            border-radius: 14px;
+            border-radius: 16px;
             font-size: 17px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 15px;
-            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            transition: transform 0.1s;
         }
-        button:active { transform: scale(0.98); background-color: #0062cc; }
-        button:disabled { background-color: #d1d1d6; color: #8e8e93; transform: none;}
+        button:active { transform: scale(0.96); }
+        button:disabled { background-color: #d1d1d6; box-shadow: none; }
         
         #resultArea {
             margin-top: 25px;
             padding: 20px;
-            background-color: #f2f2f7;
+            background-color: #f2f7ff;
             border-radius: 18px;
             color: #007aff;
             font-weight: 600;
@@ -80,16 +111,11 @@
         .class-detail {
             display: block;
             margin-top: 5px;
-            font-size: 0.6em;
-            color: #8e8e93;
+            font-size: 0.75em;
+            color: #666;
             font-weight: normal;
         }
         .error { color: #ff3b30 !important; background-color: #fff2f1 !important; }
-
-        @media (max-width: 480px) {
-            .container { padding: 1.8rem; }
-            h2 { font-size: 1.4rem; }
-        }
     </style>
 </head>
 <body>
@@ -97,9 +123,20 @@
     <div class="container">
         <h2 id="pageTitle" class="loading-title">준비 중...</h2>
         
-        <input type="text" id="studentId" placeholder="2025학년도 학번 (예: 10101)" inputmode="numeric" maxlength="5">
-        <input type="text" id="studentName" placeholder="이름 (예: 홍길동)">
-        <input type="password" id="birthDate" placeholder="생년월일 6자리 (예: 080101)" inputmode="numeric" maxlength="6">
+        <div class="input-group">
+            <div class="input-row">
+                <span class="label">학번</span>
+                <input type="text" id="studentId" placeholder="예: 10101" inputmode="numeric" maxlength="5">
+            </div>
+            <div class="input-row">
+                <span class="label">이름</span>
+                <input type="text" id="studentName" placeholder="예: 홍길동">
+            </div>
+            <div class="input-row">
+                <span class="label">생일</span>
+                <input type="password" id="birthDate" placeholder="예: 080101" inputmode="numeric" maxlength="6">
+            </div>
+        </div>
         
         <button onclick="searchClass()" id="btnSearch">조회하기</button>
 
@@ -108,9 +145,9 @@
 
     <script>
         // ============================================================
-        // ▼ 아래 주소를 선생님의 GAS 웹앱 URL로 꼭 바꿔주세요!
+        // ▼ GAS 웹앱 URL을 여기에 붙여넣으세요!
         // ============================================================
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzRA0k45igBaOu32ZGFxDEF5AFs9zJzbBsikXCJHRkrwRG9BhHJwjOHhHqPizCUH6PU0g/exec"; 
+        const GAS_URL = "여기에_복사한_웹앱URL을_붙여넣으세요"; 
         // ============================================================
 
         window.onload = function() {
@@ -118,13 +155,23 @@
                 .then(response => response.json())
                 .then(json => {
                     if(json.result === "success") {
+                        // 1. 제목 업데이트 (시트 이름)
                         const titleElement = document.getElementById('pageTitle');
-                        titleElement.innerText = "🏫 " + json.sheetName + " 반배정 조회";
+                        titleElement.innerText = json.sheetName + " 반배정 조회";
                         titleElement.classList.remove('loading-title');
+
+                        // 2. 입력창 예시 문구 업데이트 (시트 헤더 내용 반영)
+                        // 시트의 1행 내용을 가져와서 "헤더내용 (예: ...)" 형태로 만듭니다.
+                        if (json.headers) {
+                            document.getElementById('studentId').placeholder = `${json.headers.col1} (예: 10101)`;
+                            document.getElementById('studentName').placeholder = `${json.headers.col2} (예: 홍길동)`;
+                            document.getElementById('birthDate').placeholder = `${json.headers.col3} (예: 080101)`;
+                        }
                     }
                 })
                 .catch(err => {
-                    document.getElementById('pageTitle').innerText = "🏫 반배정 조회";
+                    console.error(err);
+                    document.getElementById('pageTitle').innerText = "반배정 조회";
                 });
         };
 
@@ -162,15 +209,15 @@
                         const grade = newId.substring(0, 1);
                         const cls = parseInt(newId.substring(1, 3));
                         const num = parseInt(newId.substring(3, 5));
-                        detailText = `(${grade}학년 ${cls}반 ${num}번)`;
+                        detailText = `${grade}학년 ${cls}반 ${num}번`;
                     }
 
                     resultDiv.innerHTML = `
-                        ${json.data.name} 학생의 새 학번<br>
-                        <span style="font-size:1.8em; display:block; margin-top:10px;">
-                            🎉 ${newId}
-                            <span class="class-detail">${detailText}</span>
+                        ${json.data.name} 학생<br>
+                        <span style="font-size:2em; display:block; margin-top:8px; color:#007aff;">
+                            ${newId}
                         </span>
+                        <span class="class-detail">${detailText}</span>
                     `;
                 } else {
                     resultDiv.innerHTML = json.message;
@@ -179,7 +226,7 @@
             })
             .catch(error => {
                 resultDiv.style.display = 'block';
-                resultDiv.innerText = "시스템 오류가 발생했습니다.";
+                resultDiv.innerText = "통신 오류가 발생했습니다.";
                 resultDiv.classList.add('error');
             })
             .finally(() => {
