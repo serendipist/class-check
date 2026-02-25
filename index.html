@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>반배정 결과 조회</title>
+    <title>Class Assignment Search</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏫</text></svg>">
     <style>
         body {
@@ -37,7 +37,9 @@
         }
         .loading-title { color: #999; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        input {
+        
+        /* Unified Style for Input and Select */
+        input, select {
             width: 100%;
             padding: 16px;
             margin-bottom: 12px;
@@ -49,12 +51,31 @@
             color: #1d1d1f;
             outline: none;
             transition: all 0.2s ease;
+            appearance: none; /* Removes native arrow on some browsers for custom styling */
+            -webkit-appearance: none;
         }
-        input:focus { 
+        
+        /* Dropdown arrow for Select */
+        .select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .select-wrapper::after {
+            content: '▼';
+            font-size: 12px;
+            position: absolute;
+            right: 15px;
+            top: 22px;
+            color: #8e8e93;
+            pointer-events: none;
+        }
+
+        input:focus, select:focus { 
             border-color: #007aff; 
             box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
         }
         ::placeholder { color: #8e8e93; font-weight: 400; }
+        
         button {
             width: 100%;
             padding: 16px;
@@ -97,120 +118,152 @@
     <div class="container">
         <h2 id="pageTitle" class="loading-title">준비 중...</h2>
         
-        <datalist id="schoolOptions"></datalist>
-        <input type="text" id="studentId" placeholder="출신 학교 조회 중..." inputmode="text" list="schoolOptions">
-        <input type="text" id="studentName" placeholder="이름 조회 중...">
-        <input type="password" id="birthDate" placeholder="생년월일 조회 중..." inputmode="numeric" maxlength="6">
+        <div class="select-wrapper">
+            <select id="schoolSelect">
+                <option value="" disabled selected>출신 학교 선택</option>
+            </select>
+        </div>
         
-        <button onclick="searchClass()" id="btnSearch">조회하기</button>
+        <input type="text" id="studentName" placeholder="이름 (예: 박서준)" autocomplete="off">
+        <input type="password" id="birthDate" placeholder="생년월일 6자리 (예: 080101)" inputmode="numeric" maxlength="6">
+        
+        <button onclick="handleSearchClick()" id="btnSearch">조회하기</button>
         <div id="resultArea"></div>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzRA0k45igBaOu32ZGFxDEF5AFs9zJzbBsikXCJHRkrwRG9BhHJwjOHhHqPizCUH6PU0g/exec"; 
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzRA0k45igBaOu32ZGFxDEF5AFs9zJzbBsikXCJHRkrwRG9BhHJwjOHhHqPizCUH6PU0g/exec"; 
 
         window.onload = function() {
-            fetch(GAS_URL, {
+            initializePageData();
+        };
+
+        // Initialize school list and page title from GAS
+        function initializePageData() {
+            fetch(GAS_ENDPOINT, {
                 method: "GET",
                 redirect: "follow"
             })
             .then(response => response.json())
             .then(json => {
                 if(json.result === "success") {
-                    const titleElement = document.getElementById('pageTitle');
-                    titleElement.innerText = json.sheetName + " 반배정 조회";
-                    titleElement.classList.remove('loading-title');
-    
-                    if (json.headers) {
-                        document.getElementById('studentId').placeholder = `${json.headers.col1} 검색 또는 선택`;
-                        document.getElementById('studentName').placeholder = `${json.headers.col2} (예: 박서준)`;
-                        document.getElementById('birthDate').placeholder = `${json.headers.col3} (예: 080101)`;
-                    }
-    
-                    if (json.schoolList) {
-                        const dataList = document.getElementById('schoolOptions');
-                        json.schoolList.forEach(school => {
-                            const option = document.createElement('option');
-                            option.value = school;
-                            dataList.appendChild(option);
-                        });
-                    }
+                    updateUIWithMetaData(json);
+                    populateSchoolSelect(json.schoolList);
                 }
             })
             .catch(err => {
-                console.error(err);
+                console.error("Initialization error:", err);
                 document.getElementById('pageTitle').innerText = "반배정 조회";
             });
-        };
+        }
 
-        function searchClass() {
-            const id = document.getElementById('studentId').value.trim();
-            const name = document.getElementById('studentName').value.trim();
-            const birth = document.getElementById('birthDate').value.trim();
-            const dataList = document.getElementById('schoolOptions');
-            const options = Array.from(dataList.options).map(opt => opt.value);
+        function updateUIWithMetaData(json) {
+            const titleElement = document.getElementById('pageTitle');
+            titleElement.innerText = json.sheetName + " 반배정 조회";
+            titleElement.classList.remove('loading-title');
+
+            if (json.headers) {
+                document.getElementById('studentName').placeholder = `${json.headers.col2} (예: 박서준)`;
+                document.getElementById('birthDate').placeholder = `${json.headers.col3} (예: 080101)`;
+            }
+        }
+
+        function populateSchoolSelect(schools) {
+            const selectElement = document.getElementById('schoolSelect');
+            if (schools) {
+                schools.forEach(school => {
+                    const option = document.createElement('option');
+                    option.value = school;
+                    option.text = school;
+                    selectElement.appendChild(option);
+                });
+            }
+        }
+
+        // Main search function
+        function handleSearchClick() {
+            const schoolName = document.getElementById('schoolSelect').value;
+            const studentName = document.getElementById('studentName').value.trim();
+            const birthDate = document.getElementById('birthDate').value.trim();
             
             const btn = document.getElementById('btnSearch');
             const resultDiv = document.getElementById('resultArea');
             
-            if(!id || !name || birth.length < 6) {
-                alert("모든 정보를 정확히 입력해주세요.");
-                return;
-            }
-    
-            if(options.length > 0 && !options.includes(id)) {
-                alert("목록에 있는 정확한 중학교 이름을 선택하거나 입력해주세요.");
+            if(!schoolName || !studentName || birthDate.length < 6) {
+                alert("학교 선택 및 모든 정보를 정확히 입력해주세요.");
                 return;
             }
 
-            btn.innerText = "조회 중...";
-            btn.disabled = true;
-            resultDiv.style.display = 'none';
-            resultDiv.className = '';
+            setLoadingState(true);
 
-            fetch(GAS_URL, {
+            const requestBody = {
+                studentId: schoolName, // Using the selected school name as ID mapping in GAS
+                studentName: studentName,
+                birthDate: birthDate
+            };
+
+            fetch(GAS_ENDPOINT, {
                 method: "POST",
                 redirect: "follow",
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
-                body: JSON.stringify({ studentId: id, studentName: name, birthDate: birth })
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(requestBody)
             })
             .then(response => response.json())
             .then(json => {
-                resultDiv.style.display = 'block';
-                if (json.result === "success") {
-                    const newId = json.data.newClass;
-                    let detailText = "";
-                    
-                    if (newId.length === 5 && !isNaN(newId)) {
-                        const grade = newId.substring(0, 1);
-                        const cls = parseInt(newId.substring(1, 3));
-                        const num = parseInt(newId.substring(3, 5));
-                        detailText = `${grade}학년 ${cls}반 ${num}번`;
-                    }
-
-                    resultDiv.innerHTML = `
-                        <span style="color:#1d1d1f; font-weight:600;">${json.data.name} 학생</span><br>
-                        <span style="font-size:2.2em; display:block; margin-top:12px; color:#007aff; letter-spacing:-1px;">
-                            ${newId}
-                        </span>
-                        <span class="class-detail">${detailText}</span>
-                    `;
-                } else {
-                    resultDiv.innerHTML = json.message;
-                    resultDiv.classList.add('error');
-                }
+                displayResult(json);
             })
             .catch(error => {
-                resultDiv.style.display = 'block';
-                resultDiv.innerText = "서버 통신 오류가 발생했습니다.";
-                resultDiv.classList.add('error');
+                showError("서버 통신 오류가 발생했습니다.");
             })
             .finally(() => {
-                btn.innerText = "조회하기";
-                btn.disabled = false;
+                setLoadingState(false);
             });
+        }
+
+        function setLoadingState(isLoading) {
+            const btn = document.getElementById('btnSearch');
+            btn.innerText = isLoading ? "조회 중..." : "조회하기";
+            btn.disabled = isLoading;
+            if (isLoading) {
+                const resultDiv = document.getElementById('resultArea');
+                resultDiv.style.display = 'none';
+                resultDiv.className = '';
+            }
+        }
+
+        function displayResult(json) {
+            const resultDiv = document.getElementById('resultArea');
+            resultDiv.style.display = 'block';
+            
+            if (json.result === "success") {
+                const newId = json.data.newClass;
+                let detailText = "";
+                
+                // Parsing logic for class ID (example: 10101 -> 1 grade 1 class 1 num)
+                if (newId.length === 5 && !isNaN(newId)) {
+                    const grade = newId.substring(0, 1);
+                    const cls = parseInt(newId.substring(1, 3));
+                    const num = parseInt(newId.substring(3, 5));
+                    detailText = `${grade}학년 ${cls}반 ${num}번`;
+                }
+
+                resultDiv.innerHTML = `
+                    <span style="color:#1d1d1f; font-weight:600;">${json.data.name} 학생</span><br>
+                    <span style="font-size:2.2em; display:block; margin-top:12px; color:#007aff; letter-spacing:-1px;">
+                        ${newId}
+                    </span>
+                    <span class="class-detail">${detailText}</span>
+                `;
+            } else {
+                showError(json.message);
+            }
+        }
+
+        function showError(message) {
+            const resultDiv = document.getElementById('resultArea');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = message;
+            resultDiv.classList.add('error');
         }
     </script>
 </body>
