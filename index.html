@@ -136,13 +136,22 @@
                         const titleElement = document.getElementById('pageTitle');
                         titleElement.innerText = json.sheetName + " 반배정 조회";
                         titleElement.classList.remove('loading-title');
-
-                        // 2. 입력창 예시 문구 업데이트 (헤더 내용 적용)
+        
+                        // 2. 입력창 예시 문구 업데이트
                         if (json.headers) {
-                            // 라벨 없이 깔끔하게 헤더 내용만 보여줍니다.
-                            document.getElementById('studentId').placeholder = `${json.headers.col1} (예: 10101)`;
+                            document.getElementById('studentId').placeholder = `${json.headers.col1} 검색 또는 선택`;
                             document.getElementById('studentName').placeholder = `${json.headers.col2} (예: 박서준)`;
                             document.getElementById('birthDate').placeholder = `${json.headers.col3} (예: 080101)`;
+                        }
+        
+                        // 3. 학교 목록 데이터 바인딩 (GAS에서 schoolList 배열을 보내준다고 가정)
+                        if (json.schoolList) {
+                            const dataList = document.getElementById('schoolOptions');
+                            json.schoolList.forEach(school => {
+                                const option = document.createElement('option');
+                                option.value = school;
+                                dataList.appendChild(option);
+                            });
                         }
                     }
                 })
@@ -153,15 +162,21 @@
         };
 
         function searchClass() {
-            const id = document.getElementById('studentId').value;
-            const name = document.getElementById('studentName').value;
-            const birth = document.getElementById('birthDate').value;
+            const id = document.getElementById('studentId').value.trim(); // 출신중학교
+            const name = document.getElementById('studentName').value.trim();
+            const birth = document.getElementById('birthDate').value.trim();
             
-            const resultDiv = document.getElementById('resultArea');
-            const btn = document.getElementById('btnSearch');
-
+            // 유효성 검사: 입력한 학교가 실제 목록에 있는지 확인
+            const dataList = document.getElementById('schoolOptions');
+            const options = Array.from(dataList.options).map(opt => opt.value);
+            
             if(!id || !name || birth.length < 6) {
                 alert("모든 정보를 정확히 입력해주세요.");
+                return;
+            }
+        
+            if(options.length > 0 && !options.includes(id)) {
+                alert("목록에 있는 정확한 중학교 이름을 선택하거나 입력해주세요.");
                 return;
             }
 
