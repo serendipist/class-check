@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Class Assignment Search</title>
+    <title>반배정 결과 조회</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏫</text></svg>">
     <style>
         body {
@@ -38,7 +38,6 @@
         .loading-title { color: #999; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
         
-        /* Unified Style for Input and Select */
         input, select {
             width: 100%;
             padding: 16px;
@@ -51,11 +50,10 @@
             color: #1d1d1f;
             outline: none;
             transition: all 0.2s ease;
-            appearance: none; /* Removes native arrow on some browsers for custom styling */
+            appearance: none;
             -webkit-appearance: none;
         }
         
-        /* Dropdown arrow for Select */
         .select-wrapper {
             position: relative;
             width: 100%;
@@ -116,18 +114,18 @@
 </head>
 <body>
     <div class="container">
-        <h2 id="pageTitle" class="loading-title">준비 중...</h2>
+        <h2 id="pageTitle" class="loading-title">데이터 로딩 중...</h2>
         
         <div class="select-wrapper">
             <select id="schoolSelect">
-                <option value="" disabled selected>출신 학교 선택</option>
+                <option value="" disabled selected>출신 중학교 선택</option>
             </select>
         </div>
         
-        <input type="text" id="studentName" placeholder="이름 (예: 박서준)" autocomplete="off">
-        <input type="password" id="birthDate" placeholder="생년월일 6자리 (예: 080101)" inputmode="numeric" maxlength="6">
+        <input type="text" id="studentName" placeholder="성명" autocomplete="off">
+        <input type="password" id="birthDate" placeholder="생년월일 6자리 (예: 100101)" inputmode="numeric" maxlength="6">
         
-        <button onclick="handleSearchClick()" id="btnSearch">조회하기</button>
+        <button onclick="handleSearchClick()" id="btnSearch">결과 조회하기</button>
         <div id="resultArea"></div>
     </div>
 
@@ -138,7 +136,6 @@
             initializePageData();
         };
 
-        // Initialize school list and page title from GAS
         function initializePageData() {
             fetch(GAS_ENDPOINT, {
                 method: "GET",
@@ -152,8 +149,8 @@
                 }
             })
             .catch(err => {
-                console.error("Initialization error:", err);
-                document.getElementById('pageTitle').innerText = "반배정 조회";
+                console.error("초기화 오류:", err);
+                document.getElementById('pageTitle').innerText = "반배정 결과 조회";
             });
         }
 
@@ -164,14 +161,20 @@
 
             if (json.headers) {
                 document.getElementById('studentName').placeholder = `${json.headers.col2} (예: 박서준)`;
-                document.getElementById('birthDate').placeholder = `${json.headers.col3} (예: 080101)`;
+                document.getElementById('birthDate').placeholder = `${json.headers.col3} (예: 100101)`;
             }
         }
 
+        /**
+         * 학교 목록을 가나다순으로 정렬하여 셀렉트 박스에 추가하는 함수
+         */
         function populateSchoolSelect(schools) {
             const selectElement = document.getElementById('schoolSelect');
-            if (schools) {
-                schools.forEach(school => {
+            if (schools && schools.length > 0) {
+                // 한글 가나다순 정렬 적용
+                const sortedSchools = [...schools].sort((a, b) => a.localeCompare(b, 'ko'));
+
+                sortedSchools.forEach(school => {
                     const option = document.createElement('option');
                     option.value = school;
                     option.text = school;
@@ -180,14 +183,12 @@
             }
         }
 
-        // Main search function
         function handleSearchClick() {
             const schoolName = document.getElementById('schoolSelect').value;
             const studentName = document.getElementById('studentName').value.trim();
             const birthDate = document.getElementById('birthDate').value.trim();
             
             const btn = document.getElementById('btnSearch');
-            const resultDiv = document.getElementById('resultArea');
             
             if(!schoolName || !studentName || birthDate.length < 6) {
                 alert("학교 선택 및 모든 정보를 정확히 입력해주세요.");
@@ -197,7 +198,7 @@
             setLoadingState(true);
 
             const requestBody = {
-                studentId: schoolName, // Using the selected school name as ID mapping in GAS
+                studentId: schoolName,
                 studentName: studentName,
                 birthDate: birthDate
             };
@@ -213,7 +214,7 @@
                 displayResult(json);
             })
             .catch(error => {
-                showError("서버 통신 오류가 발생했습니다.");
+                showError("서버와의 연결이 원활하지 않습니다.");
             })
             .finally(() => {
                 setLoadingState(false);
@@ -222,7 +223,7 @@
 
         function setLoadingState(isLoading) {
             const btn = document.getElementById('btnSearch');
-            btn.innerText = isLoading ? "조회 중..." : "조회하기";
+            btn.innerText = isLoading ? "데이터 조회 중..." : "결과 조회하기";
             btn.disabled = isLoading;
             if (isLoading) {
                 const resultDiv = document.getElementById('resultArea');
@@ -239,7 +240,6 @@
                 const newId = json.data.newClass;
                 let detailText = "";
                 
-                // Parsing logic for class ID (example: 10101 -> 1 grade 1 class 1 num)
                 if (newId.length === 5 && !isNaN(newId)) {
                     const grade = newId.substring(0, 1);
                     const cls = parseInt(newId.substring(1, 3));
@@ -248,7 +248,7 @@
                 }
 
                 resultDiv.innerHTML = `
-                    <span style="color:#1d1d1f; font-weight:600;">${json.data.name} 학생</span><br>
+                    <span style="color:#1d1d1f; font-weight:600;">${json.data.name} 학생 결과</span><br>
                     <span style="font-size:2.2em; display:block; margin-top:12px; color:#007aff; letter-spacing:-1px;">
                         ${newId}
                     </span>
